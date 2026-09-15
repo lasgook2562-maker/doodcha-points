@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Dood Cha - สะสมแต้ม</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  :root {
+    --brown: #4a2f22;
+    --cream: #f4ead9;
+    --gold: #c79a4b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Noto Sans Thai", "Segoe UI", sans-serif;
+    background: var(--cream);
+    color: var(--brown);
+    display: flex;
+    justify-content: center;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    background: #fff;
+    padding: 24px 20px 40px;
+  }
+  .header {
+    text-align: center;
+    padding: 20px 0 10px;
+  }
+  .header img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--gold);
+  }
+  .header h1 {
+    font-size: 20px;
+    margin: 12px 0 2px;
+  }
+  .header p {
+    color: #8a7360;
+    font-size: 13px;
+    margin: 0;
+  }
+  .points-box {
+    background: linear-gradient(135deg, var(--brown), #6b4530);
+    color: var(--cream);
+    border-radius: 18px;
+    padding: 22px;
+    text-align: center;
+    margin: 20px 0;
+  }
+  .points-box .num {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .points-box .label {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .qr-box {
+    background: var(--cream);
+    border: 2px dashed var(--gold);
+    border-radius: 18px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .qr-box canvas {
+    max-width: 180px;
+  }
+  .qr-box p {
+    font-size: 12px;
+    color: #8a7360;
+    margin-top: 10px;
+  }
+  .status {
+    text-align: center;
+    font-size: 14px;
+    color: #8a7360;
+    padding: 40px 0;
+  }
+  .uid {
+    font-size: 10px;
+    word-break: break-all;
+    color: #b3a58f;
+    text-align: center;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div id="loading" class="status">กำลังโหลด...</div>
+
+    <div id="content" style="display:none;">
+      <div class="header">
+        <img id="profilePic" src="" alt="profile" />
+        <h1 id="displayName">-</h1>
+        <p>สมาชิกร้าน Dood Cha</p>
+      </div>
+
+      <div class="points-box">
+        <div class="num" id="pointCount">0</div>
+        <div class="label">แต้มสะสมของคุณ</div>
+      </div>
+
+      <div class="qr-box">
+        <canvas id="qrcode"></canvas>
+        <p>แสดง QR นี้ให้พนักงานสแกนทุกครั้งที่สั่งซื้อ</p>
+        <div class="uid" id="uidText"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ⚠️ ใส่ LIFF ID ที่ได้จาก LINE Developers Console ตรงนี้
+  const LIFF_ID = "YOUR_LIFF_ID_HERE";
+
+  async function main() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+
+      document.getElementById("profilePic").src = profile.pictureUrl || "";
+      document.getElementById("displayName").textContent = profile.displayName;
+      document.getElementById("uidText").textContent = profile.userId;
+
+      // TODO: แทนที่ด้วยการดึงแต้มจริงจาก backend (Google Sheets / Firestore / API)
+      // ตัวอย่าง: const res = await fetch(`https://your-api.com/points/${profile.userId}`);
+      const points = 0; // ค่าตั้งต้น รอเชื่อม backend
+      document.getElementById("pointCount").textContent = points;
+
+      // สร้าง QR code จาก userId เพื่อให้พนักงานสแกนตอนเพิ่มแต้ม
+      QRCode.toCanvas(document.getElementById("qrcode"), profile.userId, {
+        width: 180,
+        color: { dark: "#4a2f22", light: "#f4ead9" }
+      });
+
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("content").style.display = "block";
+    } catch (err) {
+      document.getElementById("loading").textContent =
+        "เกิดข้อผิดพลาด: " + err.message;
+    }
+  }
+
+  main();
+</script>
+</body>
+</html>
