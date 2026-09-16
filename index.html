@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Dood Cha - สะสมแต้ม</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
   :root {
     --brown: #4a2f22;
@@ -113,7 +112,7 @@
       </div>
 
       <div class="qr-box">
-        <canvas id="qrcode"></canvas>
+        <img id="qrcode" alt="QR code" style="width:180px;height:180px;" />
         <p>แสดง QR นี้ให้พนักงานสแกนทุกครั้งที่สั่งซื้อ</p>
         <div class="uid" id="uidText"></div>
       </div>
@@ -145,10 +144,9 @@
       document.getElementById("pointCount").textContent = points;
 
       // สร้าง QR code จาก userId เพื่อให้พนักงานสแกนตอนเพิ่มแต้ม
-      QRCode.toCanvas(document.getElementById("qrcode"), profile.userId, {
-        width: 180,
-        color: { dark: "#4a2f22", light: "#f4ead9" }
-      });
+      document.getElementById("qrcode").src =
+        "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" +
+        encodeURIComponent(profile.userId);
 
       document.getElementById("loading").style.display = "none";
       document.getElementById("content").style.display = "block";
