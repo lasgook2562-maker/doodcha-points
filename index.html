@@ -122,6 +122,7 @@
 <script>
   // ⚠️ ใส่ LIFF ID ที่ได้จาก LINE Developers Console ตรงนี้
   const LIFF_ID = "2011602503-cfZspRj0";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDZ5WiIFTuPU3kPA5cetv4LN5g5S7vgZlLBmlpo_kXIXHpiEawIAmYO3e4vlUXo-Wi/exec";
 
   async function main() {
     try {
@@ -138,10 +139,12 @@
       document.getElementById("displayName").textContent = profile.displayName;
       document.getElementById("uidText").textContent = profile.userId;
 
-      // TODO: แทนที่ด้วยการดึงแต้มจริงจาก backend (Google Sheets / Firestore / API)
-      // ตัวอย่าง: const res = await fetch(`https://your-api.com/points/${profile.userId}`);
-      const points = 0; // ค่าตั้งต้น รอเชื่อม backend
-      document.getElementById("pointCount").textContent = points;
+      // ดึงแต้มจริงจาก Google Sheets ผ่าน Apps Script API
+      const res = await fetch(
+        `${SCRIPT_URL}?userId=${encodeURIComponent(profile.userId)}`
+      );
+      const pointData = await res.json();
+      document.getElementById("pointCount").textContent = pointData.points;
 
       // สร้าง QR code จาก userId เพื่อให้พนักงานสแกนตอนเพิ่มแต้ม
       document.getElementById("qrcode").src =
