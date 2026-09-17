@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dood Cha - พนักงานเพิ่มแต้ม</title>
+<style>
+  :root {
+    --brown: #4a2f22;
+    --cream: #f4ead9;
+    --gold: #c79a4b;
+    --green: #3f8f5f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Noto Sans Thai", "Segoe UI", sans-serif;
+    background: var(--cream);
+    color: var(--brown);
+    display: flex;
+    justify-content: center;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    min-height: 100vh;
+    background: #fff;
+    padding: 24px 20px 40px;
+  }
+  h1 {
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .sub {
+    text-align: center;
+    font-size: 13px;
+    color: #8a7360;
+    margin-bottom: 24px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 16px 0 6px;
+  }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #ddceb8;
+    font-size: 16px;
+  }
+  .video-wrap {
+    margin-top: 16px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+    display: none;
+  }
+  .video-wrap.active { display: block; }
+  video { width: 100%; display: block; }
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 14px;
+    cursor: pointer;
+  }
+  .btn-scan {
+    background: var(--cream);
+    color: var(--brown);
+    border: 2px solid var(--gold);
+  }
+  .btn-submit {
+    background: var(--brown);
+    color: var(--cream);
+  }
+  .btn-submit:disabled {
+    opacity: 0.5;
+  }
+  .result {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 15px;
+    display: none;
+  }
+  .result.success {
+    background: #e6f4ea;
+    color: var(--green);
+    display: block;
+  }
+  .result.error {
+    background: #fdecea;
+    color: #b3261e;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>เพิ่มแต้มลูกค้า</h1>
+    <p class="sub">ร้าน Dood Cha</p>
+
+    <label for="uidInput">รหัสลูกค้า (UID)</label>
+    <input type="text" id="uidInput" placeholder="สแกน QR หรือพิมพ์รหัสลูกค้า" />
+
+    <button class="btn-scan" id="scanBtn">📷 เปิดกล้องสแกน QR</button>
+    <div class="video-wrap" id="videoWrap">
+      <video id="video" playsinline autoplay></video>
+    </div>
+
+    <label for="pointsInput">จำนวนแต้มที่จะเพิ่ม</label>
+    <input type="number" id="pointsInput" value="1" min="1" />
+
+    <button class="btn-submit" id="submitBtn">✓ เพิ่มแต้ม</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDZ5WiIFTuPU3kPA5cetv4LN5g5S7vgZlLBmlpo_kXIXHpiEawIAmYO3e4vlUXo-Wi/exec";
+
+  const uidInput = document.getElementById("uidInput");
+  const pointsInput = document.getElementById("pointsInput");
+  const submitBtn = document.getElementById("submitBtn");
+  const scanBtn = document.getElementById("scanBtn");
+  const videoWrap = document.getElementById("videoWrap");
+  const video = document.getElementById("video");
+  const resultBox = document.getElementById("result");
+
+  let stream = null;
+  let scanning = false;
+
+  // สแกน QR ด้วยกล้อง (ใช้ BarcodeDetector ของเบราว์เซอร์ ไม่ต้องพึ่งไลบรารีภายนอก)
+  scanBtn.addEventListener("click", async () => {
+    if (!("BarcodeDetector" in window)) {
+      alert("อุปกรณ์นี้ไม่รองรับการสแกนอัตโนมัติ กรุณาพิมพ์รหัสลูกค้าแทน");
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      video.srcObject = stream;
+      videoWrap.classList.add("active");
+      scanning = true;
+
+      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const scanLoop = async () => {
+        if (!scanning) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length > 0) {
+            uidInput.value = codes[0].rawValue;
+            stopScan();
+            return;
+          }
+        } catch (e) {}
+        requestAnimationFrame(scanLoop);
+      };
+      scanLoop();
+    } catch (err) {
+      alert("เปิดกล้องไม่สำเร็จ: " + err.message);
+    }
+  });
+
+  function stopScan() {
+    scanning = false;
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    videoWrap.classList.remove("active");
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    const userId = uidInput.value.trim();
+    const points = Number(pointsInput.value);
+
+    if (!userId) {
+      showResult("กรุณากรอกหรือสแกนรหัสลูกค้าก่อน", false);
+      return;
+    }
+    if (!points || points <= 0) {
+      showResult("กรุณากรอกจำนวนแต้มให้ถูกต้อง", false);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "กำลังบันทึก...";
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ userId, points })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(`เพิ่มแต้มสำเร็จ! แต้มสะสมล่าสุด: ${data.points}`, true);
+        uidInput.value = "";
+      } else {
+        showResult("เกิดข้อผิดพลาด กรุณาลองใหม่", false);
+      }
+    } catch (err) {
+      showResult("เชื่อมต่อไม่สำเร็จ: " + err.message, false);
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "✓ เพิ่มแต้ม";
+  });
+
+  function showResult(msg, ok) {
+    resultBox.textContent = msg;
+    resultBox.className = "result " + (ok ? "success" : "error");
+  }
+</script>
+</body>
+</html>
