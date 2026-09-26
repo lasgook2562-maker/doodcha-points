@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dood Cha - พนักงานเพิ่มแต้ม</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
   :root {
     --brown: #4a2f22;
@@ -112,8 +113,9 @@
 
     <button class="btn-scan" id="scanBtn">📷 เปิดกล้องสแกน QR</button>
     <div class="video-wrap" id="videoWrap">
-      <video id="video" playsinline autoplay></video>
+      <video id="video" playsinline autoplay muted></video>
     </div>
+    <canvas id="canvas" style="display:none;"></canvas>
 
     <label for="pointsInput">จำนวนแต้มที่จะเพิ่ม</label>
     <input type="number" id="pointsInput" value="1" min="1" />
@@ -137,12 +139,11 @@
   let stream = null;
   let scanning = false;
 
-  // สแกน QR ด้วยกล้อง (ใช้ BarcodeDetector ของเบราว์เซอร์ ไม่ต้องพึ่งไลบรารีภายนอก)
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // สแกน QR ด้วยไลบรารี jsQR ผ่านการอ่านภาพจากกล้องทีละเฟรม (ทำงานได้ทุกเบราว์เซอร์)
   scanBtn.addEventListener("click", async () => {
-    if (!("BarcodeDetector" in window)) {
-      alert("อุปกรณ์นี้ไม่รองรับการสแกนอัตโนมัติ กรุณาพิมพ์รหัสลูกค้าแทน");
-      return;
-    }
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" }
@@ -151,17 +152,23 @@
       videoWrap.classList.add("active");
       scanning = true;
 
-      const detector = new BarcodeDetector({ formats: ["qr_code"] });
-      const scanLoop = async () => {
+      video.addEventListener("loadedmetadata", () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      }, { once: true });
+
+      const scanLoop = () => {
         if (!scanning) return;
-        try {
-          const codes = await detector.detect(video);
-          if (codes.length > 0) {
-            uidInput.value = codes[0].rawValue;
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) {
+            uidInput.value = code.data;
             stopScan();
             return;
           }
-        } catch (e) {}
+        }
         requestAnimationFrame(scanLoop);
       };
       scanLoop();
