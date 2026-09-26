@@ -104,7 +104,15 @@
 </style>
 </head>
 <body>
-  <div class="card">
+  <div class="card" id="lockScreen">
+    <h1>🔒 หน้าพนักงาน</h1>
+    <p class="sub">กรุณากรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+    <input type="password" id="pwInput" placeholder="รหัสผ่าน" style="margin-top:8px;" />
+    <button class="btn-submit" id="pwBtn" style="margin-top:14px;">เข้าสู่ระบบ</button>
+    <div class="result" id="pwError"></div>
+  </div>
+
+  <div class="card" id="mainScreen" style="display:none;">
     <h1>เพิ่มแต้มลูกค้า</h1>
     <p class="sub">ร้าน Dood Cha</p>
 
@@ -126,6 +134,38 @@
   </div>
 
 <script>
+  // ⚠️ ตั้งรหัสผ่านสำหรับพนักงานตรงนี้ (แก้เป็นรหัสที่ต้องการได้เลย)
+  const STAFF_PASSWORD = "doodcha2026";
+
+  const lockScreen = document.getElementById("lockScreen");
+  const mainScreen = document.getElementById("mainScreen");
+  const pwInput = document.getElementById("pwInput");
+  const pwBtn = document.getElementById("pwBtn");
+  const pwError = document.getElementById("pwError");
+
+  // จำการล็อกอินไว้ในเครื่องนี้ 12 ชั่วโมง ไม่ต้องกรอกรหัสซ้ำทุกครั้ง
+  const savedAuth = sessionStorage.getItem("staffAuth");
+  if (savedAuth === "ok") {
+    lockScreen.style.display = "none";
+    mainScreen.style.display = "block";
+  }
+
+  function checkPassword() {
+    if (pwInput.value === STAFF_PASSWORD) {
+      sessionStorage.setItem("staffAuth", "ok");
+      lockScreen.style.display = "none";
+      mainScreen.style.display = "block";
+    } else {
+      pwError.textContent = "รหัสผ่านไม่ถูกต้อง";
+      pwError.className = "result error";
+    }
+  }
+
+  pwBtn.addEventListener("click", checkPassword);
+  pwInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") checkPassword();
+  });
+
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtbcvaoCQam2N5ynVj6Q4tVW1102EswQ4V-LeQNg_nmcpPOw7b52Dk7KVtgcd2Bg7v/exec";
 
   const uidInput = document.getElementById("uidInput");
