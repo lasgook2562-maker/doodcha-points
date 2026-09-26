@@ -93,6 +93,49 @@
     text-align: center;
     margin-top: 4px;
   }
+  .rewards-box h2 {
+    font-size: 15px;
+    margin: 0 0 10px;
+  }
+  .reward-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border: 1.5px solid #ead9bd;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .reward-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .reward-cost {
+    font-size: 12px;
+    color: #8a7360;
+  }
+  .redeem-btn {
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .redeem-btn:disabled {
+    opacity: 0.5;
+  }
+  .redeem-msg {
+    text-align: center;
+    font-size: 13px;
+    margin-top: 4px;
+    min-height: 18px;
+  }
+  .redeem-msg.ok { color: #3f8f5f; }
+  .redeem-msg.err { color: #b3261e; }
 </style>
 </head>
 <body>
@@ -116,6 +159,19 @@
         <p>แสดง QR นี้ให้พนักงานสแกนทุกครั้งที่สั่งซื้อ</p>
         <div class="uid" id="uidText"></div>
       </div>
+
+      <div class="rewards-box">
+        <h2>แลกของรางวัล</h2>
+        <div class="reward-item">
+          <div>
+            <div class="reward-name">เครื่องดื่มฟรี 1 แก้ว</div>
+            <div class="reward-cost">ใช้ 10 แต้ม</div>
+          </div>
+          <button class="redeem-btn" data-cost="10" data-name="เครื่องดื่มฟรี 1 แก้ว">แลก</button>
+        </div>
+      </div>
+
+      <div class="redeem-msg" id="redeemMsg"></div>
     </div>
   </div>
 
@@ -153,6 +209,37 @@
 
       document.getElementById("loading").style.display = "none";
       document.getElementById("content").style.display = "block";
+
+      // ผูกปุ่มแลกรางวัลทุกปุ่ม
+      document.querySelectorAll(".redeem-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const cost = btn.dataset.cost;
+          const rewardName = btn.dataset.name;
+          btn.disabled = true;
+          const msgBox = document.getElementById("redeemMsg");
+          msgBox.textContent = "กำลังดำเนินการ...";
+          msgBox.className = "redeem-msg";
+
+          try {
+            const r = await fetch(
+              `${SCRIPT_URL}?action=redeem&userId=${encodeURIComponent(profile.userId)}&cost=${cost}`
+            );
+            const d = await r.json();
+            if (d.success) {
+              document.getElementById("pointCount").textContent = d.points;
+              msgBox.textContent = `แลก "${rewardName}" สำเร็จ! แสดงข้อความนี้ให้พนักงานดู`;
+              msgBox.className = "redeem-msg ok";
+            } else {
+              msgBox.textContent = d.error || "แลกไม่สำเร็จ";
+              msgBox.className = "redeem-msg err";
+            }
+          } catch (err) {
+            msgBox.textContent = "เชื่อมต่อไม่สำเร็จ: " + err.message;
+            msgBox.className = "redeem-msg err";
+          }
+          btn.disabled = false;
+        });
+      });
     } catch (err) {
       document.getElementById("loading").textContent =
         "เกิดข้อผิดพลาด: " + err.message;
